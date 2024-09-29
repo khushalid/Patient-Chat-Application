@@ -6,13 +6,10 @@ let uniqueIdToRetry = null;
 const submitButton = document.getElementById('submit-button');
 const regenerateResponseButton = document.getElementById('regenerate-response-button');
 const promptInput = document.getElementById('prompt-input');
-// const modelSelect = document.getElementById('model-select');
 const responseList = document.getElementById('response-list');
 let isGeneratingResponse = false;
 
 let loadInterval = null;
-
-
 
 promptInput.addEventListener('keydown', function(event) {
     if (event.key === 'Enter') {
@@ -34,27 +31,32 @@ function generateUniqueId() {
 }
 
 
-function addResponse(selfFlag, prompt) {
+function addResponse(selfFlag, prompt, timestamp) {
     const uniqueId = generateUniqueId();
+    const formattedTimestamp = new Date(timestamp).toLocaleString(); // Ensure timestamp is formatted correctly
+    console.log("Adding response with timestamp:", formattedTimestamp); // Debug log
+    
     const html = `
-            <div class="response-container ${selfFlag ? 'my-question' : 'chatgpt-response'}">
-                <img class="avatar-image" src="../../static/chat/img/${selfFlag ? 'me' : 'chatgpt'}.png" alt="avatar"/>
-                <div class="prompt-content" id="${uniqueId}">${prompt}</div>
+        <div class="response-container ${selfFlag ? 'my-question' : 'chatgpt-response'}">
+            <img class="avatar-image" src="../../static/chat/img/${selfFlag ? 'me' : 'chatgpt'}.png" alt="avatar"/>
+            <div class="prompt-content" id="${uniqueId}">
+                <div class="message-content">${prompt}</div>
+                <div class="timestamp">${formattedTimestamp}</div>
             </div>
-        `
+        </div>
+    `;
     responseList.insertAdjacentHTML('beforeend', html);
     responseList.scrollTop = responseList.scrollHeight;
     return uniqueId;
 }
 
+
 function loader(element) {
-    element.textContent = ''
+    element.textContent = '';
 
     loadInterval = setInterval(() => {
-        // Update the text content of the loading indicator
         element.textContent += '.';
 
-        // If the loading indicator has reached three dots, reset it
         if (element.textContent === '....') {
             element.textContent = '';
         }
@@ -74,122 +76,139 @@ function setRetryResponse(prompt, uniqueId) {
 
 async function regenerateGPTResult() {
     try {
-        await getGPTResult(promptToRetry, uniqueIdToRetry)
+        await getGPTResult(promptToRetry, uniqueIdToRetry);
         regenerateResponseButton.classList.add("loading");
     } finally {
         regenerateResponseButton.classList.remove("loading");
     }
 }
 
-// Function to get GPT result
 async function getGPTResult(_promptToRetry, _uniqueIdToRetry) {
-    // Get the prompt input
     const prompt = _promptToRetry ?? promptInput.textContent;
 
-    // If a response is already being generated or the prompt is empty, return
     if (isGeneratingResponse || !prompt) {
         return;
     }
 
-    // Add loading class to the submit button
     submitButton.classList.add("loading");
-
-    // Clear the prompt input
     promptInput.textContent = '';
 
     if (!_uniqueIdToRetry) {
-        // Add the prompt to the response list
         addResponse(true, prompt);
     }
 
-    // Get a unique ID for the response element
     const uniqueId = _uniqueIdToRetry ?? addResponse(false);
-
-    // Get the response element
     const responseElement = document.getElementById(uniqueId);
-
-    // Show the loader
     loader(responseElement);
-
-    // Set isGeneratingResponse to true
     isGeneratingResponse = true;
 
     try {
-        //const model = modelSelect.value;
-        // Send a POST request to the API with the prompt in the request body
         const response = await fetch(API_URL + 'get_prompt_result/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt          
-            })
+            body: JSON.stringify({ prompt })
         });
-        if (!response.ok) {
-            setRetryResponse(prompt, uniqueId);
-            setErrorForResponse(responseElement, `HTTP Error: ${await response.text()}`);
-            return;
-        }
-        const responseText = await response.json();
-        
-        // Set the response text
-        responseElement.innerHTML = converter.makeHtml(responseText.trim());;
-        
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        let responseData;
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+            responseData = await response.json();
+        } else {
+            responseData = await response.text();
+        }
+
+        let responseText;
+        if (typeof responseData === 'object') {
+            responseText = responseData.reply || JSON.stringify(responseData);
+            print("type of response" + typeof responseData === 'object')
+        } else if (typeof responseData === 'string') {
+            responseText = responseData;
+        } else {
+            throw new Error('Unexpected response format');
+        }
+
+        responseElement.innerHTML = converter.makeHtml(responseText.trim());
         promptToRetry = null;
         uniqueIdToRetry = null;
         regenerateResponseButton.style.display = 'none';
+
         setTimeout(() => {
-            // Scroll to the bottom of the response list
             responseList.scrollTop = responseList.scrollHeight;
             hljs.highlightAll();
         }, 10);
     } catch (err) {
         setRetryResponse(prompt, uniqueId);
-        // If there's an error, show it in the response element
         setErrorForResponse(responseElement, `Error: ${err.message}`);
     } finally {
-        // Set isGeneratingResponse to false
         isGeneratingResponse = false;
-
-        // Remove the loading class from the submit button
-        //submitButton.classList.remove("loading");
-
-        // Clear the loader interval
-        clearInterval(loadInterval);
+        submitButton.classList.remove("loading");
     }
 }
 
+// async function getMessages() {
+//     const currentUrl = window.location.href.split('/');
+//     const response = await fetch(API_URL + 'messages/' + currentUrl.at(-2), {
+//         method: 'GET',
+//         headers: { 'Content-Type': 'application/json' },
+//     });
+
+//     if (!response.ok) {
+//         console.error('Failed to fetch messages:', response.statusText);
+//         return;
+//     }
+
+//     const messages = await response.json();
+//     console.log("Fetched messages:", messages); // Debug log
+
+//     for (let message of messages) {
+//         addResponse(message.is_user, message.message, message.timestamp);
+//     }
+
+//     setTimeout(() => {
+//         responseList.scrollTop = responseList.scrollHeight;
+//         hljs.highlightAll();
+//     }, 10);
+// }
+
 async function getMessages() {
-    //const uniqueId = generateUniqueId();
-        //const model = modelSelect.value;
-        // Send a POST request to the API with the prompt in the request body
-        const currentUrl = window.location.href.split('/');
+    const currentUrl = window.location.href.split('/');
+    try {
         const response = await fetch(API_URL + 'messages/' + currentUrl.at(-2), {
             method: 'GET',
             headers: { 'Content-Type': 'application/json' },
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Failed to fetch messages:', response.status, errorText);
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
         const messages = await response.json();
+        console.log("Fetched messages:", messages);
 
         for (let message of messages) {
-            let responseElement = document.getElementById(addResponse(message.is_user, message.message));
-            responseElement.innerHTML = converter.makeHtml(message.message.trim());
+            addResponse(message.is_user, message.message, message.timestamp);
         }
-        
-        // Set the response text
-        //responseElement.innerHTML = converter.makeHtml(responseText.trim());;
-        
+
         setTimeout(() => {
-            // Scroll to the bottom of the response list
             responseList.scrollTop = responseList.scrollHeight;
             hljs.highlightAll();
         }, 10);
-    
+    } catch (error) {
+        console.error('Error in getMessages:', error);
+        // Handle the error appropriately (e.g., show an error message to the user)
+    }
 }
-
 
 submitButton.addEventListener("click", () => {
     getGPTResult();
 });
+
 regenerateResponseButton.addEventListener("click", () => {
     regenerateGPTResult();
 });

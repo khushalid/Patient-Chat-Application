@@ -130,3 +130,33 @@ Don't forget change DEBUG option to False in settings.py and collect all static 
 [demo]: https://chat.w3b.dedyn.io/chat
 [image]: https://user-images.githubusercontent.com/104368253/226906808-c055a331-4d33-44db-817b-27b47e191d7d.png
 [django-docs]: https://docs.djangoproject.com/en/4.1/ref/databases/
+
+
+1. python -m venv env 
+2. source env/bin/activate 
+3. pip install -r requirements.txt 
+4. python manage.py makemigrations
+5. python manage.py migrate
+6. python manage.py runserver 
+
+database
+1. brew install postgresql
+2. psql -U postgres -d postgres
+3. pass: kd12345678
+
+If error with import of pysocgp2
+1. python -m pip install psycopg2-binary
+2. python -c "import psycopg2"
+
+
+Login details:
+superuser:
+1. user = kdaga
+2. email = kdaga@andrew.cmu.edu
+3. password = kd1234
+
+
+To check if neo4j is working:
+1. export NEO4J_HOME=/Users/khushalidaga/Downloads/neo4j-community-4.4.37
+2. echo $NEO4J_HOME
+3. brew services start neo4j - to start neo4j service

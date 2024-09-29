@@ -15,4 +15,4 @@ class ChatSerializer(ModelSerializer):
 class MessageSerializer(ModelSerializer):
     class Meta:
         model = Message
-        fields = ['id', 'message', 'is_user', 'chat']
+        fields = ['id', 'message', 'is_user', 'chat', 'timestamp']

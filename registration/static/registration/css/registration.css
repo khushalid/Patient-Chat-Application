@@ -64,7 +64,7 @@ a {
 
 /*========== components ==========*/
 .container {
-  max-width: 120rem;
+  max-width: 100rem;
   width: 90%;
   margin: auto;
 }
@@ -442,6 +442,7 @@ a {
   font-size: 1.8rem;
 }
 .auth .layout__boxHeader {
+  width: 100%;
   text-align: center;
   justify-content: center;
 }

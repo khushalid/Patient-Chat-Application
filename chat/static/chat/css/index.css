@@ -114,6 +114,13 @@ select {
     outline: none !important;
 }
 
+.timestamp {
+    font-size: 0.75em; /* Decrease font size */
+    color: gray; /* Set color for timestamp */
+    text-align: right; /* Align text to the right */
+    margin-top: 5px; /* Add some space above the timestamp */
+}
+
 /* Remove background color and add an SVG background for the submit button */
 #submit-button {
     background: transparent url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><path fill='white' d='M2.01 21L23 12 2.01 3 2 10l15 2-15 2z'/></svg>") no-repeat center center;
@@ -123,6 +130,20 @@ select {
     border: none;
     border-radius: 5px;
     cursor: pointer;
+}
+
+.clear-btn {
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.clear-btn:hover {
+    background-color: #c82333;
 }
 
 #regenerate-button-container {

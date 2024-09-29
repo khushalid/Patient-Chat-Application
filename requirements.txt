@@ -1,4 +1,14 @@
 Django
 djangorestframework
 python-dotenv
+psycopg2
+psycopg
+django-environ
+google-generativeai
+neo4j
 openai
+langchain 
+langchain-community 
+langchain-openai 
+langchain-experimental 
+langchain_google_genai
