@@ -7,5 +7,5 @@ urlpatterns = [
     path('', views.chat_main, name='chat'),
     path('<int:pk>/', views.chat, name='chat_id'),
     path('api/', include('chat.api.urls')),
-    path('<int:pk>/clear/', views.clear_chat, name='clear_chat'),
+    path('clear_chat/<int:pk>/', views.clear_chat, name='clear_chat'),
 ]

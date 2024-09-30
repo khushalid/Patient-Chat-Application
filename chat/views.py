@@ -6,12 +6,12 @@ from django.utils.timezone import localtime
 @login_required
 def chat_main(request):
     try:
-        Chat.objects.filter(user = request.user)[0]
+        chat, created = Chat.objects.get_or_create(user=request.user)
     except:
         chat = Chat(user = request.user)
         chat.save()
 
-    return redirect('chat_id', pk=2)
+    return redirect('chat_id', pk=chat.id)
 
 
 
@@ -41,7 +41,7 @@ def clear_chat(request, pk):
         Message.objects.filter(chat=chat).delete()
         
         # Redirect to the chat page after clearing
-        return redirect('chat_id', pk=1)
+        return redirect('chat_id', pk=pk)
 
 
 
