@@ -12,3 +12,15 @@ langchain-community
 langchain-openai 
 langchain-experimental 
 langchain_google_genai
+weave
+PyPDF2
+faiss-cpu
+wandb
+python-dotenv
+chromadb
+langchain_elasticsearch
+unstructured
+pdfminer.six
+pi_heif
+"unstructured[pdf]"
+dill

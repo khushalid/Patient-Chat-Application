@@ -11,6 +11,9 @@ from .graph_schema import NODES, RELATIONSHIPS
 from langchain_google_genai import GoogleGenerativeAI
 from langchain_core.documents import Document
 import re
+from datetime import datetime, timedelta
+import calendar
+import pdb
 
 # Neo4j setup
 NEO4J_URI = os.getenv("NEO4J_URI")
@@ -20,23 +23,7 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 # graph_db = Neo4jGraph(url=NEO4J_URI, username=NEO4J_USERNAME, password=NEO4J_PASSWORD)
 graph_db = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
-# LLM setup - for Gemini (you'll need to write a custom LLM wrapper for Gemini if not done yet)
-# genai.configure(api_key=settings.GEMINI_API_KEY)
-# llm = genai.GenerativeModel("gemini-pro")
-
-# llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-latest", temperature=0.2, verbose=True, google_api_key=settings.GEMINI_API_KEY)
-
 llm = GoogleGenerativeAI(model="gemini-pro", temperature=0.2, google_api_key=settings.GEMINI_API_KEY)
-
-# llm_transformer = LLMGraphTransformer(llm=llm)
-
-# llm_transformer = LLMGraphTransformer(
-#     llm=llm,
-#     allowed_nodes=list(NODES.keys()),
-#     allowed_relationships=[rel for rels in RELATIONSHIPS.values() for rel in rels],
-#     node_properties=list(set([prop for props in NODES.values() for prop in props]))
-# )
-
 
 def store_graph_in_neo4j(graph_db, graph_documents):
     with graph_db.session() as session:
@@ -57,18 +44,6 @@ def store_graph_in_neo4j(graph_db, graph_documents):
             """
             session.run(query, source_id=rel['source'], target_id=rel['target'])
 
-
-# # def get_graph_data(username):
-# #     # Example function to query the graph
-# #     query = f"""
-# #     MATCH (a:Appointment {{user: '{username}'}})
-# #     RETURN a.details, a.status
-# #     """
-# #     result = graph_db.run_query(query)
-
-# #     # Format the result for easy reading
-# #     appointments = [f"{record['a.details']} - Status: {record['a.status']}" for record in result]
-# #     return appointments
 
 
 
@@ -113,9 +88,6 @@ def convert_to_graph_document(prompt, username):
         nodes, patient_name = create_nodes_from_info(info, username)
         relationships = create_relationships_from_info(info, patient_name)
         
-        print(f"Nodes: {nodes}")
-        print(f"Relationships: {relationships}")
-        
         return [Document(page_content=prompt, metadata={'nodes': nodes, 'relationships': relationships})]
     except Exception as e:
         print(f"An error occurred in convert_to_graph_document: {str(e)}")
@@ -127,12 +99,13 @@ def create_nodes_from_info(info, username):
 
     patient_name = info.get('PatientName') or username
     print(patient_name)
+    print("creat node info: ", info)
 
     if patient_name:
         nodes.append({
             'id': f"Patient_{patient_name}",
             'type': 'Patient',
-            'properties': {'Name': info['PatientName']}  
+            'properties': {'Name': f"Patient_{patient_name}"}  
         })
 
     if info.get('DoctorName'):
@@ -157,10 +130,14 @@ def create_nodes_from_info(info, username):
         })
 
     if info.get('AppointmentDate') and info.get('AppointmentTime'):
+        date_time = datetime.strptime(f"{info['AppointmentDate']} {info['AppointmentTime']}", "%m/%d %H:%M")
         nodes.append({
-            'id': f"Appointment_{info['AppointmentDate']}_{info['AppointmentTime']}",
+            'id': f"Appointment_{date_time.strftime('%m/%d_%H:%M')}",
             'type': 'Appointment',
-            'properties': {'Date': info['AppointmentDate'], 'Time': info['AppointmentTime']}
+            'properties': {
+                'Date': date_time.strftime("%m/%d"),  # Format: YYYY-MM-DD
+                'Time': date_time.strftime("%H:%M")  # Format: HH:MM
+            }
         })
 
     return nodes, patient_name
@@ -170,8 +147,8 @@ def create_relationships_from_info(info, patient_name):
 
     if patient_name and info.get('DoctorName'):
         relationships.append({
-            'source': f"Patient_{patient_name}",
-            'target': f"Doctor_{info['DoctorName']}",
+            'source': f"Doctor_{info['DoctorName']}",
+            'target': f"Patient_{patient_name}",
             'type': 'TREATS'
         })
 
@@ -204,3 +181,123 @@ def create_relationships_from_info(info, patient_name):
         })
 
     return relationships
+
+def get_appointment_details(username):
+    username = f"Patient_{username}"
+    with graph_db.session() as session:
+        query = """
+        MATCH (p:Patient {id: $username})-[:HAS_APPOINTMENT]->(a:Appointment)-[:WITH_DOCTOR]->(d:Doctor)
+        RETURN p.id as PatientName, a.Date as AppointmentDate, a.Time as AppointmentTime, d.Name as DoctorName 
+        """
+        result = session.run(query, username=username)
+        # appointments = [dict(record) for record in result]
+        appointments = [{"Date": record["AppointmentDate"], "Time": record["AppointmentTime"], "Doctor": record["DoctorName"]} 
+                        for record in result]
+        if appointments:
+            details = "Your appointments:\n"
+            for apt in appointments:
+                details += f"Date: {apt['Date']}, Time: {apt['Time']}, Doctor: {apt['Doctor']}\n"
+        else:
+            details = "You have no scheduled appointments."
+        
+        return details
+
+
+
+def convert_update_query_to_graph_document(prompt, username):
+    try:
+        print("Starting conversion process...")
+        extraction_prompt = f"""
+        Extract the following information from the text, if present:
+        - Patient Name
+        - Doctor Name
+        - Appointment Date
+        - Appointment Time
+        - Medical Condition (if mentioned)
+        - Medication (if mentioned)
+
+        Text: {prompt}
+
+        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication.
+        If any information is not present, leave the corresponding field empty.
+        """
+        
+        response = llm.invoke(extraction_prompt)
+        print("Extraction completed.")
+        
+        try:
+            json_content = extract_json_from_response(response)
+            info = json.loads(json_content)
+            print(f"Extracted info: {info}")
+        except json.JSONDecodeError:
+            print(f"Failed to parse JSON: {response}")
+            info = {}
+
+        with graph_db.session() as session:
+            get_appointment_query = """
+            MATCH (p:Patient {id: $patient_id})-[:HAS_APPOINTMENT]->(a:Appointment)-[:WITH_DOCTOR]->(d:Doctor)
+            RETURN a.id as AppointmentId, a.Date as Date, a.Time as Time, d.id as DoctorId, d.Name as DoctorName, p.id as PatientName
+            LIMIT 1
+            """
+            result = session.run(get_appointment_query, patient_id=f"Patient_{username}")
+            existing_appointment = result.single()
+            print("existing appointment: ", existing_appointment)
+
+            if not existing_appointment:
+                return "No existing appointment found for the user."
+            
+            print("newinfo: ", info)
+            # Step 2 & 3: Prepare update data
+            update_data = {
+                'PatientName': info.get('PatientName') or existing_appointment['PatientName'],
+                'AppointmentDate': info.get('AppointmentDate') or existing_appointment['Date'],
+                'AppointmentTime': info.get('AppointmentTime').split(' ')[0] if info.get('AppointmentTime') else existing_appointment['Time'],
+                'DoctorName': info.get('DoctorName') or existing_appointment['DoctorName'],
+                'MedicalCondition': info.get('MedicalCondition') or existing_appointment.get('MedicalCondition') or None,
+                'Medication': info.get('Medication') or existing_appointment.get('Medication') or None
+            }
+
+
+        nodes, patient_name = create_nodes_from_info(update_data, username)
+        relationships = create_relationships_from_info(update_data, patient_name)
+        
+        return [Document(page_content=prompt, metadata={'nodes': nodes, 'relationships': relationships})]
+    except Exception as e:
+        print(f"An error occurred in convert_to_graph_document: {str(e)}")
+        return None
+
+def update_specific_appointment(graph_db, username, new_info):
+    with graph_db.session() as session:
+        # Step 1: Get existing appointment data
+        appointment_node = next((node for node in new_info['nodes'] if node['type'] == 'Appointment'), None)
+        doctor_node = next((node for node in new_info['nodes'] if node['type'] == 'Doctor'), None)
+        patient_node = next((node for node in new_info['nodes'] if node['type'] == 'Patient'), None)
+        print(appointment_node, doctor_node, patient_node)
+        if not appointment_node or not doctor_node or not patient_node:
+            return "Failed to extract necessary information from the graph document."
+
+        update_query = """
+        MATCH (p:Patient {id: $patient_id})-[:HAS_APPOINTMENT]->(a:Appointment)-[r:WITH_DOCTOR]->(d:Doctor)
+        SET a.Date = $new_date, 
+            a.Time = $new_time, 
+            a.id = $new_appointment_id, 
+            d.id = $new_doctor_id,
+            d.Name = $new_doctor_name
+        RETURN a.Date as NewDate, a.Time as NewTime, d.id as NewDoctor, p.id as PatientName
+        """
+        
+        result = session.run(update_query, 
+                             patient_id=f'Patient_{username}',
+                             new_appointment_id=appointment_node['id'],
+                             new_date=appointment_node['properties']['Date'],
+                             new_time=appointment_node['properties']['Time'],
+                             new_doctor_id=doctor_node['id'],
+                             new_doctor_name=doctor_node['properties']['Name'])
+        
+        print(result)
+        updated = result.single()
+        print("updated? ", updated)
+        if updated:
+            return f"Appointment updated successfully for Patient: {updated['PatientName']}. Date: {updated['NewDate']}, Time: {updated['NewTime']}, Doctor: {updated['NewDoctor']}"
+        else:
+            return "Failed to update the appointment."

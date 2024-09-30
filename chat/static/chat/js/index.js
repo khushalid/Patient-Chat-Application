@@ -91,6 +91,7 @@ async function getGPTResult(_promptToRetry, _uniqueIdToRetry) {
     }
 
     submitButton.classList.add("loading");
+
     promptInput.textContent = '';
 
     if (!_uniqueIdToRetry) {
@@ -98,39 +99,29 @@ async function getGPTResult(_promptToRetry, _uniqueIdToRetry) {
     }
 
     const uniqueId = _uniqueIdToRetry ?? addResponse(false);
+
     const responseElement = document.getElementById(uniqueId);
+
     loader(responseElement);
+
     isGeneratingResponse = true;
 
     try {
         const response = await fetch(API_URL + 'get_prompt_result/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({
+                prompt          
+            })
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            setRetryResponse(prompt, uniqueId);
+            setErrorForResponse(responseElement, `HTTP Error: ${await response.text()}`);
+            return;
         }
 
-        let responseData;
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-            responseData = await response.json();
-        } else {
-            responseData = await response.text();
-        }
-
-        let responseText;
-        if (typeof responseData === 'object') {
-            responseText = responseData.reply || JSON.stringify(responseData);
-            print("type of response" + typeof responseData === 'object')
-        } else if (typeof responseData === 'string') {
-            responseText = responseData;
-        } else {
-            throw new Error('Unexpected response format');
-        }
-
+        const responseText = await response.json();
         responseElement.innerHTML = converter.makeHtml(responseText.trim());
         promptToRetry = null;
         uniqueIdToRetry = null;
@@ -145,65 +136,35 @@ async function getGPTResult(_promptToRetry, _uniqueIdToRetry) {
         setErrorForResponse(responseElement, `Error: ${err.message}`);
     } finally {
         isGeneratingResponse = false;
-        submitButton.classList.remove("loading");
+        clearInterval(loadInterval);
     }
 }
-
-// async function getMessages() {
-//     const currentUrl = window.location.href.split('/');
-//     const response = await fetch(API_URL + 'messages/' + currentUrl.at(-2), {
-//         method: 'GET',
-//         headers: { 'Content-Type': 'application/json' },
-//     });
-
-//     if (!response.ok) {
-//         console.error('Failed to fetch messages:', response.statusText);
-//         return;
-//     }
-
-//     const messages = await response.json();
-//     console.log("Fetched messages:", messages); // Debug log
-
-//     for (let message of messages) {
-//         addResponse(message.is_user, message.message, message.timestamp);
-//     }
-
-//     setTimeout(() => {
-//         responseList.scrollTop = responseList.scrollHeight;
-//         hljs.highlightAll();
-//     }, 10);
-// }
 
 async function getMessages() {
     const currentUrl = window.location.href.split('/');
-    try {
-        const response = await fetch(API_URL + 'messages/' + currentUrl.at(-2), {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-        });
+    const response = await fetch(API_URL + 'messages/' + currentUrl.at(-2), {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+    });
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Failed to fetch messages:', response.status, errorText);
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const messages = await response.json();
-        console.log("Fetched messages:", messages);
-
-        for (let message of messages) {
-            addResponse(message.is_user, message.message, message.timestamp);
-        }
-
-        setTimeout(() => {
-            responseList.scrollTop = responseList.scrollHeight;
-            hljs.highlightAll();
-        }, 10);
-    } catch (error) {
-        console.error('Error in getMessages:', error);
-        // Handle the error appropriately (e.g., show an error message to the user)
+    if (!response.ok) {
+        console.error('Failed to fetch messages:', response.statusText);
+        return;
     }
+
+    const messages = await response.json();
+    console.log("Fetched messages:", messages); // Debug log
+
+    for (let message of messages) {
+        addResponse(message.is_user, message.message, message.timestamp);
+    }
+
+    setTimeout(() => {
+        responseList.scrollTop = responseList.scrollHeight;
+        hljs.highlightAll();
+    }, 10);
 }
+
 
 submitButton.addEventListener("click", () => {
     getGPTResult();
