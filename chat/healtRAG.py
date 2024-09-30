@@ -22,7 +22,9 @@ from langchain_elasticsearch import ElasticsearchStore
 from elasticsearch import Elasticsearch
 from langchain.vectorstores import Chroma
 import dill
+from langchain.chains.summarize import load_summarize_chain
 
+llm = GoogleGenerativeAI(model="gemini-pro", temperature=0.2, google_api_key=settings.GEMINI_API_KEY)
 def load_pdf(folder_path, pkl_path="./vector_db/health_docs.pkl"):
     health_docs = []
     if os.path.exists(pkl_path):
@@ -59,11 +61,6 @@ def get_text_chunks(health_docs):
     
     return chunks
 
-def query_elasticsearch(query, es_store):
-    retriever = es_store.as_retriever(search_kwargs={"k": 5})
-    results = retriever.get_relevant_documents(query)
-    return results
-
 def create_or_load_vector_store(health_docs):
     embeddings = GoogleGenerativeAIEmbeddings(
         model="models/embedding-001",
@@ -75,6 +72,11 @@ def create_or_load_vector_store(health_docs):
 def query_vector_store(query, vector_store, k=3):
     results = vector_store.similarity_search(query, k=k)
     return results
+
+def summarize_doc(doc, llm):
+    summary_chain = load_summarize_chain(llm, chain_type="stuff")
+    summary = summary_chain.run([doc])
+    return summary
 
 def make_rag_prompt(query, relevant_docs):
   prompt = ("""You are a helpful and informative bot that answers questions using text from the reference passage included below. \
@@ -90,12 +92,21 @@ def make_rag_prompt(query, relevant_docs):
 
   return prompt
 
-def rag_pipeline(query):
-    pdf_folder_path = './RAGData'
-    health_docs = load_pdf(pdf_folder_path)
+def build_knowledge_base(folder_path):
+    health_docs = load_pdf(folder_path)
     chunked_docs = get_text_chunks(health_docs)
     vector_store = create_or_load_vector_store(chunked_docs)
+    return vector_store
 
-    relevant_docs = query_vector_store(query, vector_store)
-    prompt = make_rag_prompt(query, relevant_docs)
+def rag_pipeline(query, vector_store):
+    vector_store = build_knowledge_base('./RAGData')
+    relevant_docs = query_vector_store(query, vector_store, k=5)
+    print(relevant_docs)
+    summaries = [summarize_doc(doc, llm) for doc in relevant_docs]
+    print(summaries)
+    focused_query = f"Based on the following summaries, answer the question: {query}\n\nSummaries: {' '.join(summaries)}"
+    final_relevant_docs = query_vector_store(focused_query, vector_store, k=3)
+
+    prompt = make_rag_prompt(query, final_relevant_docs)
+    
     return prompt

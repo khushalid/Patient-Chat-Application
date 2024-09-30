@@ -11,13 +11,14 @@ import json
 from django.conf import settings
 from chat.graph import *  # Import Neo4j functions
 from langchain_core.documents import Document
-from chat.healtRAG import rag_pipeline
+from chat.healtRAG import rag_pipeline, build_knowledge_base
 
 # Replace OpenAI with Gemini API Key
 gemini_api_key = settings.GEMINI_API_KEY  # Update your settings to include GEMINI_API_KEY
 # Ensure the API key is configured
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
+vector_store = build_knowledge_base('./RAGData')
 
 def classify_prompt(prompt):
     # Define the prompt for classification
@@ -39,7 +40,8 @@ def classify_prompt(prompt):
 @api_view(['GET'])
 def getMessages(request, pk):
     user = User.objects.get(username=request.user.username)
-    chat = Chat.objects.filter(user=user)[pk-1]
+    print(pk)
+    chat = Chat.objects.filter(user=user).get(pk=pk)
     messages = Message.objects.filter(chat=chat)
     serializer = MessageSerializer(messages, many=True)
     return Response(serializer.data)
@@ -63,7 +65,7 @@ def get_prompt_result(request):
 
             if category == "Health":
                 try:
-                    prompt = rag_pipeline(prompt)
+                    prompt = rag_pipeline(prompt, vector_store)
                     assistant_reply = llm.invoke(prompt)
                     message = Message(message=assistant_reply, is_user=False, chat=chat)
                     message.save()

@@ -42,7 +42,8 @@ def store_graph_in_neo4j(graph_db, graph_documents):
             MATCH (a {{id: $source_id}}), (b {{id: $target_id}})
             CREATE (a)-[:{rel['type']}]->(b)
             """
-            session.run(query, source_id=rel['source'], target_id=rel['target'])
+            result = session.run(query, source_id=rel['source'], target_id=rel['target'])
+            print(f"Relationship creation result for {rel['type']} ({rel['source']} -> {rel['target']}): {result.consume().counters}")
 
 
 
@@ -67,10 +68,11 @@ def convert_to_graph_document(prompt, username):
         - Appointment Time
         - Medical Condition (if mentioned)
         - Medication (if mentioned)
+        - Medication Frequency (if mentioned)
 
         Text: {prompt}
 
-        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication.
+        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication, MedicationFrequency.
         If any information is not present, leave the corresponding field empty.
         """
         
@@ -87,6 +89,9 @@ def convert_to_graph_document(prompt, username):
         
         nodes, patient_name = create_nodes_from_info(info, username)
         relationships = create_relationships_from_info(info, patient_name)
+
+        print(nodes)
+        print(relationships)
         
         return [Document(page_content=prompt, metadata={'nodes': nodes, 'relationships': relationships})]
     except Exception as e:
@@ -129,6 +134,13 @@ def create_nodes_from_info(info, username):
             'properties': {'Name': info['Medication']}  
         })
 
+    if info.get('MedicationFrequency'):
+        nodes.append({
+            'id': f"MedicationFrequency_{info['MedicationFrequency']}",
+            'type': 'Medication_Frequence',
+            'properties': {'Name': info['MedicationFrequency']}  
+        })
+
     if info.get('AppointmentDate') and info.get('AppointmentTime'):
         date_time = datetime.strptime(f"{info['AppointmentDate']} {info['AppointmentTime']}", "%m/%d %H:%M")
         nodes.append({
@@ -153,7 +165,8 @@ def create_relationships_from_info(info, patient_name):
         })
 
     if patient_name and info.get('AppointmentDate') and info.get('AppointmentTime'):
-        appointment_id = f"Appointment_{info['AppointmentDate']}_{info['AppointmentTime']}"
+        date_time = datetime.strptime(f"{info['AppointmentDate']} {info['AppointmentTime']}", "%m/%d %H:%M")
+        appointment_id = f"Appointment_{date_time.strftime('%m/%d')}_{date_time.strftime('%H:%M')}"
         relationships.append({
             'source': f"Patient_{patient_name}",
             'target': appointment_id,
@@ -178,6 +191,13 @@ def create_relationships_from_info(info, patient_name):
             'source': f"Patient_{patient_name}",
             'target': f"Medication_{info['Medication']}",
             'type': 'TAKES_MEDICATION'
+        })
+    
+    if info.get('MedicationFrequency') and info.get('Medication'):
+        relationships.append({
+            'source': f"Medication_{info['Medication']}",
+            'target': f"MedicationFrequency_{info['MedicationFrequency']}",
+            'type': 'MEDICATION_FREQUENCY'
         })
 
     return relationships
@@ -215,10 +235,11 @@ def convert_update_query_to_graph_document(prompt, username):
         - Appointment Time
         - Medical Condition (if mentioned)
         - Medication (if mentioned)
+        - Medication Frequency (if mentioned)
 
         Text: {prompt}
 
-        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication.
+        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication, MedicationFrequency.
         If any information is not present, leave the corresponding field empty.
         """
         
