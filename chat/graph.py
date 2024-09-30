@@ -275,7 +275,8 @@ def convert_update_query_to_graph_document(prompt, username):
                 'AppointmentTime': info.get('AppointmentTime').split(' ')[0] if info.get('AppointmentTime') else existing_appointment['Time'],
                 'DoctorName': info.get('DoctorName') or existing_appointment['DoctorName'],
                 'MedicalCondition': info.get('MedicalCondition') or existing_appointment.get('MedicalCondition') or None,
-                'Medication': info.get('Medication') or existing_appointment.get('Medication') or None
+                'Medication': info.get('Medication') or existing_appointment.get('Medication') or None,
+                'MedicationFrequency': info.get('MedicationFrequency') or existing_appointment.get('MedicationFrequency') or None
             }
 
 
