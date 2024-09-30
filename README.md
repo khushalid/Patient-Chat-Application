@@ -22,7 +22,27 @@ This Django application allows patients to interact with an AI bot regarding the
 - Additional Libraries: Langchain, Langgraph (for LLM and RAG)
 
 ## Interface Images:
-![alt text](https://github.com/khushalid/Patient-Chat-Application/Images/Screenshot 2024-09-30 at 7.16.07 PM.png)
+1. Health Related Question using RAG and Langchain
+<img src="https://github.com/khushalid/Patient-Chat-Application/blob/2596f53a48561886da5ac85519ddc94137576041/Images/Screenshot%202024-09-30%20at%207.16.07%E2%80%AFPM.png" width="800">
+<br>
+2. Creating Appointment using Neo4j database
+<img src="https://github.com/khushalid/Patient-Chat-Application/blob/2596f53a48561886da5ac85519ddc94137576041/Images/Screenshot%202024-09-30%20at%207.25.03%E2%80%AFPM.png" width="800">
+<br>
+3. Neo4j Knowledge Graph
+<img src="https://github.com/khushalid/Patient-Chat-Application/blob/2596f53a48561886da5ac85519ddc94137576041/Images/Screenshot%202024-09-30%20at%207.25.17%E2%80%AFPM.png" width="800">
+<br>
+4. Updating an appointment
+<img src="https://github.com/khushalid/Patient-Chat-Application/blob/2596f53a48561886da5ac85519ddc94137576041/Images/Screenshot%202024-09-30%20at%207.26.04%E2%80%AFPM.png" width="800">
+<br>
+5. Updated Neo4j Graph
+<img src="https://github.com/khushalid/Patient-Chat-Application/blob/2596f53a48561886da5ac85519ddc94137576041/Images/Screenshot%202024-09-30%20at%207.26.17%E2%80%AFPM.png" width="800">
+<br>
+6. Chat history
+<img src="https://github.com/khushalid/Patient-Chat-Application/blob/2596f53a48561886da5ac85519ddc94137576041/Images/Screenshot%202024-09-30%20at%207.26.54%E2%80%AFPM.png" width="800">
+<br>
+7. General (Non-Health) Queries
+<img src="https://github.com/khushalid/Patient-Chat-Application/blob/2596f53a48561886da5ac85519ddc94137576041/Images/Screenshot%202024-09-30%20at%207.36.24%E2%80%AFPM.png" width="800">
+<br>
 
 
 ## Setup and Installation
