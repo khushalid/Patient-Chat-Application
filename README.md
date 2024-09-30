@@ -160,3 +160,6 @@ To check if neo4j is working:
 1. export NEO4J_HOME=/Users/khushalidaga/Downloads/neo4j-community-4.4.37
 2. echo $NEO4J_HOME
 3. brew services start neo4j - to start neo4j service
+
+
+https://github.com/elastic/elasticsearch-labs/blob/main/notebooks/integrations/gemini/qa-langchain-gemini-elasticsearch.ipynb
