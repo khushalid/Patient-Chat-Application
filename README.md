@@ -54,6 +54,7 @@ python manage.py migrate
 
 6. Set up environment variables:
 - Create a `.env` file in the project folder chatbot/chatbot
+- Add this line `SECRET_KEY = 'YOUR-SECRET-KEY'`
 - Add your Gemini API key: `GEMINI_API_KEY=your_api_key_here`
 - DATABASES Postgresql
     - `ENGINE   = <change it to your database engine>`
