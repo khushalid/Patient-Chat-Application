@@ -39,7 +39,8 @@ def classify_prompt(prompt):
 @api_view(['GET'])
 def getMessages(request, pk):
     user = User.objects.get(username=request.user.username)
-    chat = Chat.objects.filter(user=user)[pk-1]
+    print(pk)
+    chat = Chat.objects.filter(user=user, pk=pk)
     messages = Message.objects.filter(chat=chat)
     serializer = MessageSerializer(messages, many=True)
     return Response(serializer.data)
