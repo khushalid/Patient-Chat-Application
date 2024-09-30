@@ -40,7 +40,7 @@ def classify_prompt(prompt):
 def getMessages(request, pk):
     user = User.objects.get(username=request.user.username)
     print(pk)
-    chat = Chat.objects.filter(user=user, pk=pk)
+    chat = Chat.objects.filter(user=user).get(pk=pk)
     messages = Message.objects.filter(chat=chat)
     serializer = MessageSerializer(messages, many=True)
     return Response(serializer.data)
