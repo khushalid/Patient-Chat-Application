@@ -68,10 +68,11 @@ def convert_to_graph_document(prompt, username):
         - Appointment Time
         - Medical Condition (if mentioned)
         - Medication (if mentioned)
+        - Medication Frequency (if mentioned)
 
         Text: {prompt}
 
-        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication.
+        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication, MedicationFrequency.
         If any information is not present, leave the corresponding field empty.
         """
         
@@ -133,6 +134,13 @@ def create_nodes_from_info(info, username):
             'properties': {'Name': info['Medication']}  
         })
 
+    if info.get('MedicationFrequency'):
+        nodes.append({
+            'id': f"MedicationFrequency_{info['MedicationFrequency']}",
+            'type': 'Medication_Frequence',
+            'properties': {'Name': info['MedicationFrequency']}  
+        })
+
     if info.get('AppointmentDate') and info.get('AppointmentTime'):
         date_time = datetime.strptime(f"{info['AppointmentDate']} {info['AppointmentTime']}", "%m/%d %H:%M")
         nodes.append({
@@ -184,6 +192,13 @@ def create_relationships_from_info(info, patient_name):
             'target': f"Medication_{info['Medication']}",
             'type': 'TAKES_MEDICATION'
         })
+    
+    if info.get('MedicationFrequency') and info.get('Medication'):
+        relationships.append({
+            'source': f"Medication_{info['Medication']}",
+            'target': f"MedicationFrequency_{info['MedicationFrequency']}",
+            'type': 'MEDICATION_FREQUENCY'
+        })
 
     return relationships
 
@@ -220,10 +235,11 @@ def convert_update_query_to_graph_document(prompt, username):
         - Appointment Time
         - Medical Condition (if mentioned)
         - Medication (if mentioned)
+        - Medication Frequency (if mentioned)
 
         Text: {prompt}
 
-        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication.
+        Format the output as a JSON object with these keys: PatientName, DoctorName, AppointmentDate, AppointmentTime, MedicalCondition, Medication, MedicationFrequency.
         If any information is not present, leave the corresponding field empty.
         """
         
