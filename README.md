@@ -21,6 +21,9 @@ This Django application allows patients to interact with an AI bot regarding the
 - LLM: Gemini API
 - Additional Libraries: Langchain, Langgraph (for LLM and RAG)
 
+## Interface Images:
+![alt text](https://github.com/khushalid/Patient-Chat-Application/Images/Screenshot 2024-09-30 at 7.16.07 PM.png)
+
 
 ## Setup and Installation
 
