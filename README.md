@@ -1,10 +1,88 @@
 # Patient Chat Application
-### Simple chatbot implementation using Gemini API
+### GenAI chatbot implementation using Gemini API
 
 
 ## Project Overview
 
 This Django application allows patients to interact with an AI bot regarding their health and care plan. The AI bot handles health-related conversations, detects patient requests for changes to their treatment or appointments, and filters out irrelevant or sensitive topics.
+
+## Setup and Installation
+
+1. Clone the repository: 
+```python
+git clone [your-repo-url]
+cd [your-repo-name]
+```
+
+2. Create and activate a virtual environment:
+```python
+python -m venv env
+source env/bin/activate # On Windows use `env\Scripts\activate`
+```
+
+3. Install dependencies:
+```python
+pip install -r requirements.txt
+```
+
+4. Set up the database:
+- Install PostgreSQL if not already installed
+- Create a new database for the project
+- Update the PostgreSQL configuration in `.env file`
+
+- Install Neo4j if not already installed
+- Create a new database for the project
+- Update the Neo4j configuration in `.env file`
+- In your virtual environment enter these commands to configure Neo4j:
+```python
+export NEO4J_HOME= <Path-To-Your-Neo4j-Folder>
+echo $NEO4J_HOME
+brew services start neo4j
+```
+5. Set up environment variables:
+- Create a `.env` file in the project folder chatbot/chatbot
+- Add the following line and their respective configuration data:
+```python
+SECRET_KEY = 'YOUR-SECRET-KEY'
+GEMINI_API_KEY = Your-Gemini-API-Key
+
+#DATABASES
+ENGINE   = 'django.db.backends.postgresql' #change it to your database engine
+NAME     = Your-Database-Name #change it to name of your database
+
+#address of your database server and user data
+#delete these rows if you going to use sqlite3
+USER     = Your-Database-User
+PASSWORD = Your-Datavase-Password
+HOST     = '127.0.0.1' # change if host address is different
+PORT     = '5432'  # change if port is different
+
+
+# new4j configurations
+NEO4J_URI = "bolt://localhost:7687"  # change if your Neo4j URL if different
+NEO4J_USERNAME = Your-Neo4j-Username
+NEO4J_PASSWORD = Your-Neo4j-Password
+
+LANGCHAIN_API_KEY = Your-Langchain-API-Key
+```
+
+6. Apply migrations:
+```python
+python manage.py makemigrations
+python manage.py migrate
+```
+
+7. Run the development server:
+```python
+python manage.py runserver
+```
+
+## Usage
+
+1. Access the application at: `http://127.0.0.1:8000/`
+2. Register yourself as a user (Enter Name, Email, Password)
+3. Start a conversation with the AI bot
+4. Ask health-related questions or make appointment requests
 
 ## Main Features
 
@@ -45,68 +123,12 @@ This Django application allows patients to interact with an AI bot regarding the
 <br>
 
 
-## Setup and Installation
-
-1. Clone the repository: 
-git clone [your-repo-url]
-cd [your-repo-name]
-
-2. Create and activate a virtual environment:
-python -m venv env
-source env/bin/activate # On Windows use `env\Scripts\activate`
-
-3. Install dependencies:
-pip install -r requirements.txt
-
-4. Set up the database:
-- Install PostgreSQL if not already installed
-- Create a new database for the project
-- Update the PostgreSQL configuration in `.env file`
-
-- Install Neo4j if not already installed
-- Create a new database for the project
-- Update the Neo4j configuration in `.env file`
-- In your virtual environment enter these commands to configure Neo4j
-    - `export NEO4J_HOME= <Path to your neo4j folder>`
-    - `echo $NEO4J_HOME`
-    - `brew services start neo4j`
-
-5. Apply migrations:
-python manage.py makemigrations
-python manage.py migrate
-
-6. Set up environment variables:
-- Create a `.env` file in the project folder chatbot/chatbot
-- Add this line `SECRET_KEY = 'YOUR-SECRET-KEY'`
-- Add your Gemini API key: `GEMINI_API_KEY=your_api_key_here`
-- DATABASES Postgresql
-    - `ENGINE   = <change it to your database engine>`
-    - `NAME     = <change it to name of your database>`
-    - `USER     = <change it to your database user>`
-    - `PASSWORD = <change it to your database password>`
-    - `HOST     = 127.0.0.1` # change if differnet
-    - `PORT     = 5432` # change if different
-- Neo4j configurations
-    - `NEO4J_URI = "bolt://localhost:7687" # change it to your Neo4j URL if different`
-    - `NEO4J_USERNAME = <change it to your Neo4j name>`
-    - `NEO4J_PASSWORD = <change it to your Neo4j password>`
-- Add your Langchain API key: `LANGCHAIN_API_KEY = <your_api_key_here>`
-
-7. Run the development server:
-python manage.py runserver
-
-## Usage
-
-1. Access the application at: http://127.0.0.1:8000/
-2. Register yourself as a user (Enter Name, Email, Password)
-3. Start a conversation with the AI bot
-4. Ask health-related questions or make appointment requests
-
 ## Assumptions and Limitations
 
 - Single patient mode (no authentication required)
 - Limited to health-related topics
 - If a new appointment is created, old appointments are deleted.
+- ChatBot Turn around time is slow because of mutliple LLM callbacks
 
 ## Future Improvements
 
@@ -115,14 +137,19 @@ python manage.py runserver
 - Enhance entity extraction and knowledge graph utilization
 - Improve conversation memory management for longer dialogues
 - Integrate with actual medical systems for real-time appointment updates
+- Improve ChatBot Turn around time using better compute/ faster LLMs/ reducing LLM callbacks
 
 
 ## Some Debugging commands:
 To install postgres
-1. `brew install postgresql`
-2. `psql -U postgres -d postgres`
-3. `pass: <your password>`
+```python
+brew install postgresql
+psql -U postgres -d postgres
+pass: <your password>
+```
 
 If you face error while importing of pysocgp2
-1. `python -m pip install psycopg2-binary`
-2. `python -c "import psycopg2"`
+```python
+python -m pip install psycopg2-binary
+python -c "import psycopg2"
+```
