@@ -136,6 +136,7 @@ python manage.py runserver
 - Improve time taken to answer user's queries
 - Enhance entity extraction and knowledge graph utilization
 - Improve conversation memory management for longer dialogues
+  - Since I am using Gemini, I have limited tokens to generate response 
 - Integrate with actual medical systems for real-time appointment updates
 - Improve ChatBot Turn around time using better compute/ faster LLMs/ reducing LLM callbacks
 
