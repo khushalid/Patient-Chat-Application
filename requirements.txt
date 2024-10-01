@@ -6,7 +6,7 @@ psycopg
 django-environ
 google-generativeai
 neo4j
-openai
+brew
 langchain 
 langchain-community 
 langchain-openai 
@@ -15,12 +15,11 @@ langchain_google_genai
 weave
 PyPDF2
 faiss-cpu
-wandb
 python-dotenv
 chromadb
 langchain_elasticsearch
 unstructured
 pdfminer.six
 pi_heif
-"unstructured[pdf]"
+unstructured[pdf]
 dill

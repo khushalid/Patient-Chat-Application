@@ -153,3 +153,9 @@ If you face error while importing of pysocgp2
 python -m pip install psycopg2-binary
 python -c "import psycopg2"
 ```
+
+If brew is not in your environment, run the following commands:
+```python
+echo 'export PATH=/opt/homebrew/bin:$PATH' >> ~/.zshrc
+source ~/.zshrc
+```
