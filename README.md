@@ -159,3 +159,4 @@ If brew is not in your environment, run the following commands:
 echo 'export PATH=/opt/homebrew/bin:$PATH' >> ~/.zshrc
 source ~/.zshrc
 ```
+# Patient_Chat_Application_AI
